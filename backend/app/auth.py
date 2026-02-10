@@ -13,7 +13,10 @@ from .models.user import User
 
 settings = get_settings()
 
-pwd_context = CryptContext(schemes=["bcrypt_sha256", "bcrypt"], deprecated="auto")
+pwd_context = CryptContext(
+    schemes=["bcrypt_sha256"],
+    deprecated="auto",
+)
 security = HTTPBearer(auto_error=False)
 
 
