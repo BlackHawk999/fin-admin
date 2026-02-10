@@ -10,9 +10,20 @@ from sqlalchemy.orm import Session
 from .config import get_settings
 from .database import get_db
 from .models.user import User
+from passlib.context import CryptContext
 
 settings = get_settings()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
+    bcrypt__truncate_error=False,
+)
+
+def get_password_hash(password: str) -> str:
+    return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
 security = HTTPBearer(auto_error=False)
 
 
