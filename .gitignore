@@ -1,12 +1,20 @@
-# node
-node_modules/
+# Node
+**/node_modules/
+**/dist/
+**/.vite/
 
-# env
-.env
-.env.*
-!.env.example
+# Playwright
+**/playwright-report/
+**/test-results/
+**/.auth.json
 
-# playwright
-frontend/test-results/
-frontend/playwright-report/
-frontend/e2e/.auth.json
+# Python
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+**/.venv/
+**/venv/
+
+# Env
+**/.env
+**/.env.*

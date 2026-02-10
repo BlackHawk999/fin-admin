@@ -1,20 +1,25 @@
-import { test as setup, expect } from '@playwright/test'
+import { test, expect } from '@playwright/test'
 
-const USER = process.env.E2E_USER ?? 'admin'
-const PASS = process.env.E2E_PASS ?? 'admin123'
+test('authenticate', async ({ page }) => {
+  const username = process.env.E2E_USERNAME
+  const password = process.env.E2E_PASSWORD
 
-setup('authenticate', async ({ page }) => {
-  await page.goto('/')
+  if (!username || !password) {
+    throw new Error('Missing E2E_USERNAME or E2E_PASSWORD. Set them in GitHub Actions Secrets.')
+  }
 
-  // если попали на логин — логинимся
-  await expect(page.getByTestId('login-submit')).toBeVisible()
+  await page.goto('/login')
 
-  await page.getByTestId('login-username').fill(USER)
-  await page.getByTestId('login-password').fill(PASS)
-  await page.getByTestId('login-submit').click()
+  // ВАЖНО: у тебя на login пока нет data-testid, поэтому ищем по label
+  await page.getByLabel('Логин').fill(username)
+  await page.getByLabel('Пароль').fill(password)
 
-  // дождаться перехода после логина
+  // кнопка submit
+  await page.getByRole('button', { name: /Войти/i }).click()
+
+  // если логин успешен — обычно редирект на "/"
   await expect(page).toHaveURL(/\/$/)
 
+  // сохраняем storageState
   await page.context().storageState({ path: 'e2e/.auth.json' })
 })
