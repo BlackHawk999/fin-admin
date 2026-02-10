@@ -12,5 +12,6 @@ openpyxl==3.1.2
 pytz==2024.1
 pytest
 pytest-asyncio
-httpx
+httpx<0.28
+
 
