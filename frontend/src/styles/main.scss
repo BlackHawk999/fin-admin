@@ -1,0 +1,113 @@
+@use 'variables' as *;
+@use 'reset';
+@use 'buttons';
+
+body {
+  font-family: $font-family;
+  font-size: $font-size-base;
+  color: $text-primary;
+  background: $bg-page;
+  line-height: 1.5;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+
+  &__sidebar {
+    width: 220px;
+    background: $bg-sidebar;
+    border-right: 1px solid $border-color;
+    padding: 1rem 0;
+  }
+
+  &__main {
+    flex: 1;
+    padding: 1.5rem;
+    overflow-x: auto;
+  }
+}
+
+.nav {
+  &__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  &__item {
+    margin: 0;
+  }
+
+  &__link {
+    display: block;
+    padding: 0.6rem 1rem;
+    color: $text-secondary;
+    text-decoration: none;
+    border-radius: 4px;
+    margin: 0 0.5rem;
+    transition: background 0.15s, color 0.15s;
+
+    &:hover {
+      background: $bg-hover;
+      color: $text-primary;
+    }
+
+    &_active {
+      background: $primary;
+      color: #fff;
+    }
+  }
+}
+
+.page-header {
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+
+  &__title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+}
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $bg-page;
+
+  &__card {
+    width: 100%;
+    max-width: 360px;
+    padding: 2rem;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  &__title {
+    margin: 0 0 1.5rem;
+    font-size: 1.25rem;
+    text-align: center;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  &__submit {
+    margin-top: 0.5rem;
+  }
+}
