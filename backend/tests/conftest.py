@@ -16,7 +16,7 @@ from app.auth import get_password_hash
 
 @pytest.fixture(scope="session", autouse=True)
 def _create_test_db():
-    # создаём таблицы для тестов
+    """Create test database tables"""
     Base.metadata.create_all(bind=engine)
     yield
     # можно не дропать, но если хочешь:
@@ -25,12 +25,13 @@ def _create_test_db():
 
 @pytest.fixture(scope="function")
 def client():
-    with TestClient(app) as c:
-        yield c
+    """Create test client - pass app as positional argument, not keyword argument"""
+    return TestClient(app)
 
 
 @pytest.fixture(scope="function")
 def test_user():
+    """Create a test user in the database"""
     db = SessionLocal()
 
     user = db.query(User).filter(User.username == "test_admin").first()
@@ -41,6 +42,7 @@ def test_user():
         )
         db.add(user)
         db.commit()
+        db.refresh(user)
 
     db.close()
     return {"username": "test_admin", "password": "test123"}
