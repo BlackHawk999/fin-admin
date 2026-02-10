@@ -10,25 +10,21 @@ from sqlalchemy.orm import Session
 from .config import get_settings
 from .database import get_db
 from .models.user import User
-from passlib.context import CryptContext
 
 settings = get_settings()
+
+# ✅ bcrypt_sha256 решает лимит 72 байта, bcrypt оставляем для старых хэшей
 pwd_context = CryptContext(schemes=["bcrypt_sha256", "bcrypt"], deprecated="auto")
 
-def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
 security = HTTPBearer(auto_error=False)
 
 
-def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
-
-
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
 
 
 def create_access_token(data: dict) -> str:
