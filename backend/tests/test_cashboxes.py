@@ -35,7 +35,6 @@ def _create_entry(client, headers: dict, cashbox_id: int, payload: dict):
     url_a = f"{CASHBOXES_URL}/{cashbox_id}/entries"
     res = client.post(url_a, json=payload, headers=headers)
 
-    # если route нет / метод не тот — пробуем вариант B
     if res.status_code in (status.HTTP_404_NOT_FOUND, status.HTTP_405_METHOD_NOT_ALLOWED):
         url_b = f"{CASHBOXES_URL}/entries"
         payload_b = {**payload, "cashbox_id": cashbox_id}
@@ -66,25 +65,25 @@ def _update_entry(client, headers: dict, cashbox_id: int, entry_id: int, payload
     return res
 
 
-def test_cashboxes_list_exists_and_has_items(client, test_user):
+def test_cashboxes_list_exists_and_has_items(client, test_user, seed_cashbox):
+    """
+    seed_cashbox гарантирует, что в БД будет хотя бы 1 касса
+    """
     headers = auth_headers(client, test_user)
 
     res = client.get(CASHBOXES_URL, headers=headers)
     assert res.status_code == 200, res.text
     items = _unwrap_list(res.json())
+
     assert isinstance(items, list), items
     assert len(items) >= 1, "Нужно хотя бы 1 касса в БД для теста"
 
 
-def test_cashbox_entry_create_then_update_requires_reason(client, test_user):
+def test_cashbox_entry_create_then_update_requires_reason(client, test_user, seed_cashbox):
     headers = auth_headers(client, test_user)
 
-    # 1) Берём первую кассу
-    cb_res = client.get(CASHBOXES_URL, headers=headers)
-    assert cb_res.status_code == 200, cb_res.text
-    cashboxes = _unwrap_list(cb_res.json())
-    assert cashboxes, "Нет касс в ответе"
-    cashbox_id = cashboxes[0]["id"]
+    # Берём кассу из фикстуры (не зависим от списка)
+    cashbox_id = seed_cashbox.id
 
     # 2) Создаём запись
     create_payload = {
@@ -114,17 +113,12 @@ def test_cashbox_entry_create_then_update_requires_reason(client, test_user):
         "date": create_payload["date"],
         "amount_uzs": 20000,
         "comment": "pytest updated",
-        # edit_reason НЕ даём
     }
 
     upd_a = _update_entry(client, headers, cashbox_id, entry_id, update_payload_no_reason)
-
-    assert upd_a.status_code in (
-        400,
-        401,
-        403,
-        422,
-    ), f"Expected error without reason, got {upd_a.status_code}: {upd_a.text}"
+    assert upd_a.status_code in (400, 401, 403, 422), (
+        f"Expected error without reason, got {upd_a.status_code}: {upd_a.text}"
+    )
 
     # 4) Обновляем С edit_reason -> должно пройти
     update_payload_with_reason = {
@@ -135,5 +129,4 @@ def test_cashbox_entry_create_then_update_requires_reason(client, test_user):
     }
 
     upd_b = _update_entry(client, headers, cashbox_id, entry_id, update_payload_with_reason)
-
     assert upd_b.status_code in (200, 204), f"Update failed: {upd_b.status_code} {upd_b.text}"

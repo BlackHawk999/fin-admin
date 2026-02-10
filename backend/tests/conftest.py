@@ -1,37 +1,33 @@
+# backend/tests/conftest.py
 import os
 import pytest
 from fastapi.testclient import TestClient
 
-# ВАЖНО: env ставим ДО импорта app
+# 1) ENV ДОЛЖЕН БЫТЬ ДО ИМПОРТА app
 os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
-os.environ.setdefault("SECRET_KEY", "test-secret")   # если у тебя есть такая настройка
-os.environ.setdefault("ALGORITHM", "HS256")          # если используешь JWT
-os.environ.setdefault("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
+os.environ.setdefault("SECRET_KEY", "test-secret")
+os.environ.setdefault("ALGORITHM", "HS256")
 
-from app.main import app
-from app.database import Base, engine, SessionLocal
-from app.models.user import User
-from app.auth import get_password_hash
-
-
-@pytest.fixture(scope="session", autouse=True)
-def _create_test_db():
-    """Create test database tables"""
-    Base.metadata.create_all(bind=engine)
-    yield
-    # можно не дропать, но если хочешь:
-    # Base.metadata.drop_all(bind=engine)
+from app.main import app  # noqa: E402
+from app.database import Base, engine, SessionLocal  # noqa: E402
+from app.models.user import User  # noqa: E402
+from app.models.cashbox import Cashbox  # noqa: E402
+from app.auth import get_password_hash  # noqa: E402
 
 
+# -------------------- CLIENT --------------------
 @pytest.fixture(scope="function")
 def client():
-    """Create test client - pass app as positional argument, not keyword argument"""
-    return TestClient(app)
+    # CI всегда стартует с пустой БД
+    Base.metadata.create_all(bind=engine)
+
+    with TestClient(app) as c:
+        yield c
 
 
+# -------------------- USER --------------------
 @pytest.fixture(scope="function")
 def test_user():
-    """Create a test user in the database"""
     db = SessionLocal()
 
     user = db.query(User).filter(User.username == "test_admin").first()
@@ -42,7 +38,28 @@ def test_user():
         )
         db.add(user)
         db.commit()
-        db.refresh(user)
 
     db.close()
-    return {"username": "test_admin", "password": "test123"}
+    return {
+        "username": "test_admin",
+        "password": "test123",
+    }
+
+
+# -------------------- CASHBOX --------------------
+@pytest.fixture(scope="function")
+def seed_cashbox():
+    """
+    Гарантирует, что в БД есть хотя бы одна касса
+    """
+    db = SessionLocal()
+
+    cashbox = db.query(Cashbox).first()
+    if not cashbox:
+        cashbox = Cashbox(name="pytest-cashbox")
+        db.add(cashbox)
+        db.commit()
+        db.refresh(cashbox)
+
+    db.close()
+    return cashbox

@@ -47,6 +47,8 @@ jobs:
       PLAYWRIGHT_BROWSERS_PATH: 0
       E2E_USERNAME: ${{ secrets.E2E_USERNAME }}
       E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+      DATABASE_URL: sqlite:///./test.db
+      SECRET_KEY: test-secret
 
     steps:
       - name: Checkout repo
