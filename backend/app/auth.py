@@ -13,9 +13,7 @@ from .models.user import User
 
 settings = get_settings()
 
-# ✅ bcrypt_sha256 решает лимит 72 байта, bcrypt оставляем для старых хэшей
 pwd_context = CryptContext(schemes=["bcrypt_sha256", "bcrypt"], deprecated="auto")
-
 security = HTTPBearer(auto_error=False)
 
 
@@ -24,7 +22,17 @@ def get_password_hash(password: str) -> str:
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    # защита: если аргументы перепутали местами, то исправим
+    p = str(plain_password or "")
+    h = str(hashed_password or "")
+
+    looks_like_hash_p = p.startswith("$2") or p.startswith("$bcrypt-sha256$")
+    looks_like_hash_h = h.startswith("$2") or h.startswith("$bcrypt-sha256$")
+
+    if looks_like_hash_p and not looks_like_hash_h:
+        p, h = h, p
+
+    return pwd_context.verify(p, h)
 
 
 def create_access_token(data: dict) -> str:
@@ -40,7 +48,9 @@ def get_user_by_username(db: Session, username: str) -> User | None:
 
 def authenticate_user(db: Session, username: str, password: str) -> User | None:
     user = get_user_by_username(db, username)
-    if not user or not verify_password(password, user.hashed_password):
+    if not user:
+        return None
+    if not verify_password(password, user.hashed_password):
         return None
     return user
 
