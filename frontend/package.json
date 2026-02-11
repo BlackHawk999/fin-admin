@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
+    "@types/node": "^20.19.33",
     "@vitejs/plugin-vue": "^5.0.4",
     "sass": "^1.72.0",
     "typescript": "~5.4.0",
