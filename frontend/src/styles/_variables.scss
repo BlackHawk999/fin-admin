@@ -1,19 +1,29 @@
-$font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+$font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
 $font-size-base: 14px;
 
-$text-primary: #1a1a1a;
-$text-secondary: #555;
-$text-muted: #888;
+/* Текст */
+$text-primary: #0b1220;      
+$text-secondary: #1e293b;    
+$text-muted: #64748b;        
 
-$primary: #2563eb;
-$primary-hover: #1d4ed8;
-$danger: #dc2626;
-$success: #16a34a;
-$border-color: #e5e7eb;
-$bg-page: #f4f6f8;
-$bg-sidebar: #fff;
-$bg-hover: #f3f4f6;
-$bg-card: #fff;
+/* Основной акцент */
+$primary: #6366f1;           
+$primary-hover: #4f46e5;     // чуть темнее, нормальный контраст с белым текстом
+$danger: #f43f5e;            
+$success: #10b981;           
 
-$radius: 6px;
-$shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+/* Границы */
+$border-color: #e2e8f0;
+
+/* Фоны */
+$bg-page: linear-gradient(135deg, #eef2ff, #f8fafc);
+$bg-sidebar: rgba(255, 255, 255, 0.85);
+
+/* ВАЖНО: hover для поверхностей делаем нейтральным */
+$bg-hover: #f1f5f9;          
+
+$bg-card: rgba(255, 255, 255, 0.95);
+
+/* UI */
+$radius: 14px;
+$shadow: 0 10px 25px rgba(99, 102, 241, 0.12);

@@ -158,6 +158,9 @@ function logout() {
 
 .sidebar-nav {
   &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
     list-style: none;
     margin: 0;
     padding: 0;
