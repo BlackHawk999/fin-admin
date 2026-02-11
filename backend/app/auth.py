@@ -23,6 +23,7 @@ security = HTTPBearer(auto_error=False)
 def get_password_hash(password: str) -> str:
     # защита на случай если сюда прилетела не строка
     password = "" if password is None else str(password)
+    print("HASHING LEN:", len(password), "VALUE_PREVIEW:", str(password)[:30])
     return pwd_context.hash(password)
 
 
@@ -88,5 +89,4 @@ async def get_current_user(
     user = get_user_by_username(db, username)
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
-
     return user
