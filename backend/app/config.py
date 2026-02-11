@@ -1,4 +1,8 @@
+from __future__ import annotations
+
+import json
 from functools import lru_cache
+
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
@@ -9,7 +13,7 @@ class Settings(BaseSettings):
 
     @field_validator("database_url", mode="before")
     @classmethod
-    def fix_postgres_url(cls, v: str) -> str:
+    def fix_postgres_url(cls, v):
         if isinstance(v, str) and v.startswith("postgres://"):
             return v.replace("postgres://", "postgresql://", 1)
         return v
@@ -28,21 +32,41 @@ class Settings(BaseSettings):
     @field_validator("cors_origins", mode="before")
     @classmethod
     def parse_cors_origins(cls, v):
+        """
+        Делает парсинг "железобетонным":
+        - если пришёл list -> чистим пробелы
+        - если пришёл JSON-список строк -> парсим
+        - если пришла строка через запятую -> сплитим
+        - никогда не падает на кривом формате
+        """
         if v is None:
-            return v
+            return []
 
-        # Если уже список — ок
+        # уже список
         if isinstance(v, list):
-            return v
+            return [str(x).strip() for x in v if str(x).strip()]
 
-        # Если строка: "a,b,c"
+        # строка из env
         if isinstance(v, str):
             s = v.strip()
             if not s:
                 return []
+
+            # JSON вида ["a","b"]
+            if s.startswith("["):
+                try:
+                    arr = json.loads(s)
+                    if isinstance(arr, list):
+                        return [str(x).strip() for x in arr if str(x).strip()]
+                except Exception:
+                    # кривой JSON -> fallback в CSV
+                    pass
+
+            # fallback: "a,b,c"
             return [x.strip() for x in s.split(",") if x.strip()]
 
-        return v
+        # всё остальное
+        return []
 
     # Timezone for exports
     timezone: str = "Asia/Tashkent"
