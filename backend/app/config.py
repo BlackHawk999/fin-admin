@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-import json
 from functools import lru_cache
-
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
     # Database (Render Postgres: DATABASE_URL; replace postgres:// with postgresql://)
-    database_url: str = "postgresql://user:pass@localhost:5432/finadmin"
+    database_url: str = Field(
+        default="postgresql://user:pass@localhost:5432/finadmin",
+        validation_alias="DATABASE_URL",
+    )
 
     @field_validator("database_url", mode="before")
     @classmethod
@@ -19,57 +20,25 @@ class Settings(BaseSettings):
         return v
 
     # JWT
-    secret_key: str = "change-me-in-production-use-env"
-    algorithm: str = "HS256"
-    access_token_expire_minutes: int = 60 * 24  # 24 hours
+    secret_key: str = Field(default="change-me-in-production-use-env", validation_alias="SECRET_KEY")
+    algorithm: str = Field(default="HS256", validation_alias="ALGORITHM")
+    access_token_expire_minutes: int = Field(default=60 * 24, validation_alias="ACCESS_TOKEN_EXPIRE_MINUTES")
 
-    # CORS
-    # Можно задавать:
-    # 1) JSON: ["https://a.com","https://b.com"]
-    # 2) строкой через запятую: https://a.com,https://b.com
-    cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    # ✅ ВАЖНО: делаем строкой, чтобы pydantic не пытался парсить как JSON list
+    cors_origins: str = Field(
+        default="http://localhost:5173,http://127.0.0.1:5173",
+        validation_alias="CORS_ORIGINS",
+    )
 
-    @field_validator("cors_origins", mode="before")
-    @classmethod
-    def parse_cors_origins(cls, v):
-        """
-        Делает парсинг "железобетонным":
-        - если пришёл list -> чистим пробелы
-        - если пришёл JSON-список строк -> парсим
-        - если пришла строка через запятую -> сплитим
-        - никогда не падает на кривом формате
-        """
-        if v is None:
+    @property
+    def cors_origins_list(self) -> list[str]:
+        s = (self.cors_origins or "").strip()
+        if not s:
             return []
-
-        # уже список
-        if isinstance(v, list):
-            return [str(x).strip() for x in v if str(x).strip()]
-
-        # строка из env
-        if isinstance(v, str):
-            s = v.strip()
-            if not s:
-                return []
-
-            # JSON вида ["a","b"]
-            if s.startswith("["):
-                try:
-                    arr = json.loads(s)
-                    if isinstance(arr, list):
-                        return [str(x).strip() for x in arr if str(x).strip()]
-                except Exception:
-                    # кривой JSON -> fallback в CSV
-                    pass
-
-            # fallback: "a,b,c"
-            return [x.strip() for x in s.split(",") if x.strip()]
-
-        # всё остальное
-        return []
+        return [x.strip() for x in s.split(",") if x.strip()]
 
     # Timezone for exports
-    timezone: str = "Asia/Tashkent"
+    timezone: str = Field(default="Asia/Tashkent", validation_alias="TIMEZONE")
 
     class Config:
         env_file = ".env"
