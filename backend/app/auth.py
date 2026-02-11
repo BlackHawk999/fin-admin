@@ -13,9 +13,10 @@ from .models.user import User
 
 settings = get_settings()
 
-pwd_context = CryptContext(
-    schemes=["bcrypt_sha256"],        
-)
+# bcrypt_sha256 решает лимит 72 bytes для "plain" пароля
+pwd_context = CryptContext(schemes=["bcrypt_sha256"], deprecated="auto")
+
+# ВАЖНО: у тебя этого не было, из-за этого get_current_user ломается
 security = HTTPBearer(auto_error=False)
 
 
@@ -24,20 +25,8 @@ def get_password_hash(password: str) -> str:
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    p = str(plain_password or "")
-    h = str(hashed_password or "")
+    return pwd_context.verify(plain_password, hashed_password)
 
-    looks_like_hash_p = p.startswith("$2") or p.startswith("$bcrypt-sha256$")
-    looks_like_hash_h = h.startswith("$2") or h.startswith("$bcrypt-sha256$")
-
-    if looks_like_hash_p and not looks_like_hash_h:
-        p, h = h, p
-
-    try:
-        return pwd_context.verify(p, h)
-    except ValueError:
-        # например: "password cannot be longer than 72 bytes"
-        return False
 
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()
