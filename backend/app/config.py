@@ -1,6 +1,6 @@
+from functools import lru_cache
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
-from functools import lru_cache
 
 
 class Settings(BaseSettings):
@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     @field_validator("database_url", mode="before")
     @classmethod
     def fix_postgres_url(cls, v: str) -> str:
-        if v.startswith("postgres://"):
+        if isinstance(v, str) and v.startswith("postgres://"):
             return v.replace("postgres://", "postgresql://", 1)
         return v
 
@@ -20,7 +20,29 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60 * 24  # 24 hours
 
     # CORS
+    # Можно задавать:
+    # 1) JSON: ["https://a.com","https://b.com"]
+    # 2) строкой через запятую: https://a.com,https://b.com
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v):
+        if v is None:
+            return v
+
+        # Если уже список — ок
+        if isinstance(v, list):
+            return v
+
+        # Если строка: "a,b,c"
+        if isinstance(v, str):
+            s = v.strip()
+            if not s:
+                return []
+            return [x.strip() for x in s.split(",") if x.strip()]
+
+        return v
 
     # Timezone for exports
     timezone: str = "Asia/Tashkent"
