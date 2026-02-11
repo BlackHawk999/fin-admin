@@ -1,12 +1,14 @@
+# backend/app/routers/expenses.py
 from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from ..database import get_db
-from ..models import User, Expense, Owner
+from ..models import User, Expense
+from ..models.expense_category import ExpenseCategory
 from ..schemas.expense import ExpenseCreate, ExpenseUpdate, ExpenseResponse
 from ..auth import get_current_user
 
@@ -25,6 +27,26 @@ def expense_to_response(e: Expense) -> ExpenseResponse:
     )
 
 
+def _assert_category_allowed(db: Session, category_name: str) -> str:
+    name = (category_name or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Category is required")
+
+    c = (
+        db.query(ExpenseCategory)
+        .filter(
+            ExpenseCategory.name == name,
+            ExpenseCategory.is_active == True,  # noqa: E712
+        )
+        .first()
+    )
+
+    if not c:
+        raise HTTPException(status_code=400, detail="Category does not exist or inactive")
+
+    return name
+
+
 @router.get("", response_model=list[ExpenseResponse])
 def list_expenses(
     db: Annotated[Session, Depends(get_db)],
@@ -37,14 +59,19 @@ def list_expenses(
     limit: int = 200,
 ):
     q = db.query(Expense)
+
     if date_from:
         q = q.filter(Expense.date >= date_from)
     if date_to:
         q = q.filter(Expense.date <= date_to)
+
+    # ✅ Раз категории теперь фиксированные (select), фильтруем по точному совпадению
     if category:
-        q = q.filter(Expense.category.ilike(f"%{category}%"))
+        q = q.filter(Expense.category == category.strip())
+
     if owner_id is not None:
         q = q.filter(Expense.owner_id == owner_id)
+
     q = q.order_by(Expense.date.desc())
     return [expense_to_response(e) for e in q.offset(skip).limit(limit).all()]
 
@@ -62,10 +89,13 @@ def expenses_sum(
         Expense.date >= date_from,
         Expense.date <= date_to,
     )
+
     if category:
-        q = q.filter(Expense.category.ilike(f"%{category}%"))
+        q = q.filter(Expense.category == category.strip())
+
     if owner_id is not None:
         q = q.filter(Expense.owner_id == owner_id)
+
     r = q.scalar()
     return {"sum_uzs": int(r)}
 
@@ -77,7 +107,6 @@ def expenses_by_day(
     date_from: date,
     date_to: date,
 ):
-    """For charts: sum by date."""
     rows = (
         db.query(Expense.date, func.sum(Expense.amount_uzs).label("total"))
         .filter(Expense.date >= date_from, Expense.date <= date_to)
@@ -95,7 +124,6 @@ def expenses_by_category(
     date_from: date,
     date_to: date,
 ):
-    """For charts: sum by category."""
     rows = (
         db.query(Expense.category, func.sum(Expense.amount_uzs).label("total"))
         .filter(Expense.date >= date_from, Expense.date <= date_to)
@@ -111,10 +139,12 @@ def create_expense(
     db: Annotated[Session, Depends(get_db)],
     _: Annotated[User, Depends(get_current_user)],
 ):
+    allowed_name = _assert_category_allowed(db, data.category)
+
     e = Expense(
         date=data.date,
         amount_uzs=data.amount_uzs,
-        category=data.category,
+        category=allowed_name,
         comment=data.comment,
         payer_type=data.payer_type,
         owner_id=data.owner_id,
@@ -133,7 +163,7 @@ def get_expense(
 ):
     e = db.query(Expense).filter(Expense.id == expense_id).first()
     if not e:
-        raise HTTPException(404, "Expense not found")
+        raise HTTPException(status_code=404, detail="Expense not found")
     return expense_to_response(e)
 
 
@@ -146,9 +176,16 @@ def update_expense(
 ):
     e = db.query(Expense).filter(Expense.id == expense_id).first()
     if not e:
-        raise HTTPException(404, "Expense not found")
-    for k, v in data.model_dump(exclude_unset=True).items():
+        raise HTTPException(status_code=404, detail="Expense not found")
+
+    payload = data.model_dump(exclude_unset=True)
+
+    if "category" in payload and payload["category"] is not None:
+        payload["category"] = _assert_category_allowed(db, payload["category"])
+
+    for k, v in payload.items():
         setattr(e, k, v)
+
     db.commit()
     db.refresh(e)
     return expense_to_response(e)
@@ -162,6 +199,6 @@ def delete_expense(
 ):
     e = db.query(Expense).filter(Expense.id == expense_id).first()
     if not e:
-        raise HTTPException(404, "Expense not found")
+        raise HTTPException(status_code=404, detail="Expense not found")
     db.delete(e)
     db.commit()

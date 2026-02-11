@@ -4,7 +4,12 @@
       <h1 class="expenses-page__title">Xarajatlar</h1>
 
       <div class="expenses-page__actions">
-        <button type="button" class="btn btn_primary" @click="openCreate" data-testid="expense-add">
+        <button
+          type="button"
+          class="btn btn_primary"
+          @click="openCreate"
+          data-testid="expense-add"
+        >
           Xarajat qo'shish
         </button>
 
@@ -15,7 +20,7 @@
           @click="exportExcel"
           data-testid="expenses-export"
         >
-          {{ exporting ? 'Скачивание...' : 'Download Excel' }}
+          {{ exporting ? "Скачивание..." : "Download Excel" }}
         </button>
       </div>
     </div>
@@ -26,14 +31,22 @@
         <DateRangePicker v-model="dateRange" />
       </div>
 
-      <BaseInput
+      <select
         v-model="filterCategory"
-        placeholder="Category"
-        class="expenses-page__filter-input"
+        class="expenses-page__select"
         data-testid="expenses-filter-category"
-      />
+      >
+        <option value="">Hammasi (category)</option>
+        <option v-for="c in categories" :key="c.id" :value="c.name">
+          {{ c.name }}
+        </option>
+      </select>
 
-      <select v-model="filterPayerType" class="expenses-page__select" data-testid="expenses-filter-payer-type">
+      <select
+        v-model="filterPayerType"
+        class="expenses-page__select"
+        data-testid="expenses-filter-payer-type"
+      >
         <option value="">Hammasi</option>
         <option value="owner">Boshliqlar</option>
         <option value="other">Boshqalar</option>
@@ -59,24 +72,47 @@
       />
     </div>
 
-    <div v-if="loading" class="expenses-page__table-wrap" data-testid="expenses-loading">
+    <div
+      v-if="loading"
+      class="expenses-page__table-wrap"
+      data-testid="expenses-loading"
+    >
       <SkeletonTable :columns="7" :rows="8" />
     </div>
 
     <template v-else>
-      <div v-if="!expenses.length" class="expenses-page__empty" data-testid="expenses-empty">
+      <div
+        v-if="!expenses.length"
+        class="expenses-page__empty"
+        data-testid="expenses-empty"
+      >
         <EmptyState text="Bu vaqtda xarajatlar yo'q">
           <template #action>
-            <button type="button" class="btn btn_primary" @click="openCreate" data-testid="expense-add-empty">
+            <button
+              type="button"
+              class="btn btn_primary"
+              @click="openCreate"
+              data-testid="expense-add-empty"
+            >
               Xarajat qo'shish
             </button>
           </template>
         </EmptyState>
       </div>
 
-      <div v-else class="expenses-page__table-wrap" data-testid="expenses-table-wrap">
+      <div
+        v-else
+        class="expenses-page__table-wrap"
+        data-testid="expenses-table-wrap"
+      >
         <div data-testid="expenses-table">
-          <BaseTable :columns="columns" :data="expenses" row-key="id" :summary="totalFormatted" actions>
+          <BaseTable
+            :columns="columns"
+            :data="expenses"
+            row-key="id"
+            :summary="totalFormatted"
+            actions
+          >
             <template #cell="{ column, row, value }">
               <!-- ✅ row может приходить как unknown -->
               <template v-if="column.key === 'amount_uzs'">
@@ -84,16 +120,26 @@
               </template>
 
               <template v-else-if="column.key === 'payer_type'">
-                <template v-if="(row as Expense).payer_type === 'owner'">Owner</template>
+                <template v-if="(row as Expense).payer_type === 'owner'"
+                  >Owner</template
+                >
                 <template v-else>Other</template>
               </template>
 
               <template v-else-if="column.key === 'owner_id'">
-                <template v-if="(row as Expense).owner_id && ownerById((row as Expense).owner_id!)">
+                <template
+                  v-if="
+                    (row as Expense).owner_id &&
+                    ownerById((row as Expense).owner_id!)
+                  "
+                >
                   <span class="expenses-page__owner">
                     <span
                       class="expenses-page__owner-dot"
-                      :style="{ background: ownerById((row as Expense).owner_id!)!.color_hex }"
+                      :style="{
+                        background: ownerById((row as Expense).owner_id!)!
+                          .color_hex,
+                      }"
                     />
                     {{ ownerById((row as Expense).owner_id!)!.name }}
                   </span>
@@ -102,7 +148,7 @@
               </template>
 
               <template v-else>
-                {{ value ?? '—' }}
+                {{ value ?? "—" }}
               </template>
             </template>
 
@@ -128,7 +174,11 @@
         </div>
       </div>
 
-      <p v-if="expenses.length" class="expenses-page__total" data-testid="expenses-total">
+      <p
+        v-if="expenses.length"
+        class="expenses-page__total"
+        data-testid="expenses-total"
+      >
         Umumiy shu vaqtda: {{ formatUzs(totalSum) }}
       </p>
     </template>
@@ -139,12 +189,51 @@
       data-testid="expense-modal"
     >
       <form class="form" data-testid="expense-form">
-        <BaseInput v-model="form.date" label="Sana" type="date" data-testid="expense-date" />
-        <MoneyInput v-model="form.amount_uzs" label="Summa" data-testid="expense-amount" />
-        <BaseInput v-model="form.category" label="Kategoriya" data-testid="expense-category" />
+        <BaseInput
+          v-model="form.date"
+          label="Sana"
+          type="date"
+          data-testid="expense-date"
+        />
+        <MoneyInput
+          v-model="form.amount_uzs"
+          label="Summa"
+          data-testid="expense-amount"
+        />
+        <label class="form__label">Kategoriya</label>
+        <select
+          v-model="form.category"
+          class="form__select"
+          data-testid="expense-category"
+        >
+          <option value="" disabled>— tanlang —</option>
+          <option v-for="c in categories" :key="c.id" :value="c.name">
+            {{ c.name }}
+          </option>
+        </select>
+
+        <div class="form__row">
+          <BaseInput
+            v-model="newCategoryName"
+            label="Yangi kategoriya"
+            placeholder="Masalan: Transport"
+          />
+          <button
+            type="button"
+            class="btn btn_secondary"
+            :disabled="addingCategory"
+            @click="addCategory"
+          >
+            {{ addingCategory ? "..." : "Qo'shish" }}
+          </button>
+        </div>
 
         <label class="form__label">To'lovchi turi</label>
-        <select v-model="form.payer_type" class="form__select" data-testid="expense-payer-type">
+        <select
+          v-model="form.payer_type"
+          class="form__select"
+          data-testid="expense-payer-type"
+        >
           <option value="other">Boshqalar</option>
           <option value="owner">Boshliqlar</option>
         </select>
@@ -161,15 +250,30 @@
           </option>
         </select>
 
-        <BaseInput v-model="form.comment" label="Izoh" data-testid="expense-comment" />
+        <BaseInput
+          v-model="form.comment"
+          label="Izoh"
+          data-testid="expense-comment"
+        />
       </form>
 
       <template #footer>
-        <button type="button" class="btn btn_secondary" @click="closeModal" data-testid="expense-cancel">
+        <button
+          type="button"
+          class="btn btn_secondary"
+          @click="closeModal"
+          data-testid="expense-cancel"
+        >
           Bekor qilish
         </button>
-        <button type="button" class="btn btn_primary" @click="save" :disabled="saving" data-testid="expense-submit">
-          {{ saving ? 'Saqlanyabdi...' : 'Saqlash' }}
+        <button
+          type="button"
+          class="btn btn_primary"
+          @click="save"
+          :disabled="saving"
+          data-testid="expense-submit"
+        >
+          {{ saving ? "Saqlanyabdi..." : "Saqlash" }}
         </button>
       </template>
     </BaseModal>
@@ -185,179 +289,220 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
-import DateRangePicker from '@/components/DateRangePicker/DateRangePicker.vue'
-import BaseTable from '@/components/BaseTable/BaseTable.vue'
-import BaseInput from '@/components/BaseInput/BaseInput.vue'
-import MoneyInput from '@/components/MoneyInput/MoneyInput.vue'
-import BaseModal from '@/components/BaseModal/BaseModal.vue'
-import ConfirmModal from '@/components/ConfirmModal/ConfirmModal.vue'
-import EmptyState from '@/components/EmptyState/EmptyState.vue'
-import SkeletonTable from '@/components/Skeleton/SkeletonTable.vue'
-import type { Column } from '@/components/BaseTable/BaseTable.vue'
+import { ref, computed, watch, onMounted } from "vue";
+import DateRangePicker from "@/components/DateRangePicker/DateRangePicker.vue";
+import BaseTable from "@/components/BaseTable/BaseTable.vue";
+import BaseInput from "@/components/BaseInput/BaseInput.vue";
+import MoneyInput from "@/components/MoneyInput/MoneyInput.vue";
+import BaseModal from "@/components/BaseModal/BaseModal.vue";
+import ConfirmModal from "@/components/ConfirmModal/ConfirmModal.vue";
+import EmptyState from "@/components/EmptyState/EmptyState.vue";
+import SkeletonTable from "@/components/Skeleton/SkeletonTable.vue";
+import type { Column } from "@/components/BaseTable/BaseTable.vue";
 
-import { fetchOwners } from '@/api/owners'
-import { downloadExpensesExcel } from '@/api/exports'
-import { fetchExpenses, createExpense, updateExpense, deleteExpense } from '@/api/expenses'
+import { fetchOwners } from "@/api/owners";
+import { downloadExpensesExcel } from "@/api/exports";
+import {
+  fetchExpenses,
+  createExpense,
+  updateExpense,
+  deleteExpense,
+} from "@/api/expenses";
 
-import { formatUzs } from '@/utils/format'
-import { firstDayOfMonth, lastDayOfMonth } from '@/utils/date'
+import { formatUzs } from "@/utils/format";
+import { firstDayOfMonth, lastDayOfMonth } from "@/utils/date";
 
-import { useToastStore } from '@/stores/toastStore'
-import type { Expense, Owner } from '@/types'
+import { useToastStore } from "@/stores/toastStore";
+import type { Expense, Owner } from "@/types";
+import {
+  fetchExpenseCategories,
+  createExpenseCategory,
+} from "@/api/expenseCategories";
+import type { ExpenseCategory } from "@/api/expenseCategories";
 
-const toast = useToastStore()
+const toast = useToastStore();
 
 const columns: Column[] = [
-  { key: 'date', label: 'Date' },
-  { key: 'category', label: 'Category' },
-  { key: 'payer_type', label: 'Payer type' },
-  { key: 'owner_id', label: 'Owner' },
-  { key: 'comment', label: 'Comment' },
-  { key: 'amount_uzs', label: 'Amount', tdClass: 'base-table__cell_right' },
-]
+  { key: "date", label: "Date" },
+  { key: "category", label: "Category" },
+  { key: "payer_type", label: "Payer type" },
+  { key: "owner_id", label: "Owner" },
+  { key: "comment", label: "Comment" },
+  { key: "amount_uzs", label: "Amount", tdClass: "base-table__cell_right" },
+];
 
-const loading = ref(true)
-const saving = ref(false)
-const exporting = ref(false)
+const loading = ref(true);
+const saving = ref(false);
+const exporting = ref(false);
 
-const expenses = ref<Expense[]>([])
-const owners = ref<Owner[]>([])
+const expenses = ref<Expense[]>([]);
+const owners = ref<Owner[]>([]);
+const categories = ref<ExpenseCategory[]>([]);
+const newCategoryName = ref("");
+const addingCategory = ref(false);
+
+async function loadCategories() {
+  const { data } = await fetchExpenseCategories();
+  categories.value = data;
+}
 
 const dateRange = ref<{ date_from: string; date_to: string }>({
   date_from: firstDayOfMonth(),
   date_to: lastDayOfMonth(),
-})
+});
 
-const filterCategory = ref('')
-const filterPayerType = ref<'' | 'owner' | 'other'>('')
-const filterOwnerId = ref<number | null>(null)
-const filterComment = ref('')
+const filterCategory = ref("");
+const filterPayerType = ref<"" | "owner" | "other">("");
+const filterOwnerId = ref<number | null>(null);
+const filterComment = ref("");
 
-const showModal = ref(false)
-const showConfirm = ref(false)
+const showModal = ref(false);
+const showConfirm = ref(false);
 
-const deleteTarget = ref<Expense | null>(null)
-const editingId = ref<number | null>(null)
+const deleteTarget = ref<Expense | null>(null);
+const editingId = ref<number | null>(null);
 
 const form = ref<{
-  date: string
-  amount_uzs: number
-  category: string
-  comment: string
-  payer_type: 'owner' | 'other'
-  owner_id: number | null
+  date: string;
+  amount_uzs: number;
+  category: string;
+  comment: string;
+  payer_type: "owner" | "other";
+  owner_id: number | null;
 }>({
   date: new Date().toISOString().slice(0, 10),
   amount_uzs: 0,
-  category: '',
-  comment: '',
-  payer_type: 'other',
+  category: "",
+  comment: "",
+  payer_type: "other",
   owner_id: null,
-})
+});
 
-const totalSum = computed(() => expenses.value.reduce((s, e) => s + (Number(e.amount_uzs) || 0), 0))
-const totalFormatted = computed(() => `Total: ${formatUzs(totalSum.value)}`)
+async function addCategory() {
+  const name = newCategoryName.value.trim();
+  if (!name) return;
+
+  addingCategory.value = true;
+  try {
+    await createExpenseCategory({ name });
+    newCategoryName.value = "";
+    await loadCategories();
+    form.value.category = name;
+    toast.success("Kategoriya qo'shildi");
+  } catch (e: any) {
+    toast.error(e?.response?.data?.detail || "Ошибка добавления категории");
+  } finally {
+    addingCategory.value = false;
+  }
+}
+
+const totalSum = computed(() =>
+  expenses.value.reduce((s, e) => s + (Number(e.amount_uzs) || 0), 0),
+);
+const totalFormatted = computed(() => `Total: ${formatUzs(totalSum.value)}`);
 
 function ownerById(id: number) {
-  return owners.value.find((o) => o.id === id)
+  return owners.value.find((o) => o.id === id);
 }
 
 function closeModal() {
-  showModal.value = false
-  editingId.value = null
+  showModal.value = false;
+  editingId.value = null;
 }
 
 function openCreate() {
-  editingId.value = null
+  editingId.value = null;
   form.value = {
     date: new Date().toISOString().slice(0, 10),
     amount_uzs: 0,
-    category: '',
-    comment: '',
-    payer_type: 'other',
+    category: "",
+    comment: "",
+    payer_type: "other",
     owner_id: null,
-  }
-  showModal.value = true
+  };
+  showModal.value = true;
 }
 
 function editExpense(row: Expense) {
-  editingId.value = row.id
+  editingId.value = row.id;
   form.value = {
     date: row.date,
     amount_uzs: Number(row.amount_uzs || 0),
     category: row.category,
-    comment: row.comment || '',
+    comment: row.comment || "",
     payer_type: row.payer_type,
     owner_id: row.owner_id ?? null,
-  }
-  showModal.value = true
+  };
+  showModal.value = true;
 }
 
 function confirmDelete(row: Expense) {
-  deleteTarget.value = row
-  showConfirm.value = true
+  deleteTarget.value = row;
+  showConfirm.value = true;
 }
 
 async function doDelete() {
-  if (!deleteTarget.value) return
+  if (!deleteTarget.value) return;
   try {
-    await deleteExpense(deleteTarget.value.id)
-    toast.success('Расход удалён')
-    await load()
+    await deleteExpense(deleteTarget.value.id);
+    toast.success("Расход удалён");
+    await load();
   } catch {
-    toast.error('Ошибка удаления')
+    toast.error("Ошибка удаления");
   } finally {
-    deleteTarget.value = null
+    deleteTarget.value = null;
   }
 }
 
 async function loadOwners() {
-  const { data } = await fetchOwners()
-  owners.value = data
+  const { data } = await fetchOwners();
+  owners.value = data;
 }
 
 async function load() {
-  loading.value = true
+  loading.value = true;
   try {
     const { data } = await fetchExpenses({
       date_from: dateRange.value.date_from,
       date_to: dateRange.value.date_to,
       category: filterCategory.value || undefined,
-      owner_id: filterPayerType.value === 'owner' ? filterOwnerId.value ?? undefined : undefined,
+      owner_id:
+        filterPayerType.value === "owner"
+          ? (filterOwnerId.value ?? undefined)
+          : undefined,
       limit: 500,
-    })
+    });
 
-    let list = data
+    let list = data;
 
     if (filterPayerType.value) {
-      list = list.filter((e) => e.payer_type === filterPayerType.value)
+      list = list.filter((e) => e.payer_type === filterPayerType.value);
     }
 
-    const q = filterComment.value.trim().toLowerCase()
+    const q = filterComment.value.trim().toLowerCase();
     if (q) {
-      list = list.filter((e) => (e.comment || '').toLowerCase().includes(q))
+      list = list.filter((e) => (e.comment || "").toLowerCase().includes(q));
     }
 
-    expenses.value = list
+    expenses.value = list;
   } catch (e: any) {
-    toast.error(e?.response?.data?.detail || 'Ошибка загрузки расходов')
-    expenses.value = []
+    toast.error(e?.response?.data?.detail || "Ошибка загрузки расходов");
+    expenses.value = [];
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 async function save() {
-  saving.value = true
+  saving.value = true;
   try {
     if (!form.value.date || !form.value.category) {
-      toast.error('Заполните дату и категорию')
-      return
+      toast.error("Заполните дату и категорию");
+      return;
     }
 
-    if (form.value.payer_type !== 'owner') {
-      form.value.owner_id = null
+    if (form.value.payer_type !== "owner") {
+      form.value.owner_id = null;
     }
 
     if (editingId.value) {
@@ -368,8 +513,8 @@ async function save() {
         comment: form.value.comment || undefined,
         payer_type: form.value.payer_type,
         owner_id: form.value.owner_id,
-      })
-      toast.success('Расход обновлён')
+      });
+      toast.success("Расход обновлён");
     } else {
       await createExpense({
         date: form.value.date,
@@ -378,56 +523,64 @@ async function save() {
         comment: form.value.comment || undefined,
         payer_type: form.value.payer_type,
         owner_id: form.value.owner_id,
-      })
-      toast.success('Расход добавлен')
+      });
+      toast.success("Расход добавлен");
     }
 
-    closeModal()
-    await load()
+    closeModal();
+    await load();
   } catch (e: any) {
-    toast.error(e?.response?.data?.detail || 'Ошибка сохранения')
+    toast.error(e?.response?.data?.detail || "Ошибка сохранения");
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
 async function exportExcel() {
-  exporting.value = true
+  exporting.value = true;
   try {
     await downloadExpensesExcel({
       date_from: dateRange.value.date_from,
       date_to: dateRange.value.date_to,
       category: filterCategory.value || undefined,
-      owner_id: filterPayerType.value === 'owner' ? filterOwnerId.value ?? undefined : undefined,
-    })
-    toast.success('Файл скачан')
+      owner_id:
+        filterPayerType.value === "owner"
+          ? (filterOwnerId.value ?? undefined)
+          : undefined,
+    });
+    toast.success("Файл скачан");
   } catch {
-    toast.error('Ошибка скачивания')
+    toast.error("Ошибка скачивания");
   } finally {
-    exporting.value = false
+    exporting.value = false;
   }
 }
 
 watch(filterPayerType, (v) => {
-  if (v !== 'owner') filterOwnerId.value = null
-})
+  if (v !== "owner") filterOwnerId.value = null;
+});
 
-let t: number | undefined
-watch([dateRange, filterCategory, filterPayerType, filterOwnerId], () => load(), { deep: true })
+let t: number | undefined;
+watch(
+  [dateRange, filterCategory, filterPayerType, filterOwnerId],
+  () => load(),
+  { deep: true },
+);
 
 watch(filterComment, () => {
-  window.clearTimeout(t)
-  t = window.setTimeout(() => load(), 250)
-})
+  window.clearTimeout(t);
+  t = window.setTimeout(() => load(), 250);
+});
 
 onMounted(async () => {
-  await loadOwners()
-  await load()
-})
+  await loadOwners();
+  await load();
+  await loadCategories();
+});
 </script>
 
 <style lang="scss" scoped>
-@use '@/styles/variables' as *;
+@use "@/styles/variables" as *;
 
 .expenses-page {
   &__header {
@@ -516,6 +669,12 @@ onMounted(async () => {
     border: 1px solid $border-color;
     border-radius: 4px;
     background: #fff;
+  }
+
+  &__row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
   }
 }
 </style>

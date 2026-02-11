@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from .routers import expense_categories
 
 from .config import get_settings
 
@@ -36,6 +37,8 @@ app.include_router(owners.router, prefix="/api")
 app.include_router(expenses.router, prefix="/api")
 app.include_router(exports.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
+app.include_router(expense_categories.router, prefix="/api")
+
 
 
 @app.get("/")
