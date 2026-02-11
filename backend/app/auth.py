@@ -14,8 +14,7 @@ from .models.user import User
 settings = get_settings()
 
 pwd_context = CryptContext(
-    schemes=["bcrypt_sha256"],
-    deprecated="auto",
+    schemes=["bcrypt_sha256"],        
 )
 security = HTTPBearer(auto_error=False)
 
@@ -25,7 +24,6 @@ def get_password_hash(password: str) -> str:
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    # защита: если аргументы перепутали местами, то исправим
     p = str(plain_password or "")
     h = str(hashed_password or "")
 
@@ -35,8 +33,11 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     if looks_like_hash_p and not looks_like_hash_h:
         p, h = h, p
 
-    return pwd_context.verify(p, h)
-
+    try:
+        return pwd_context.verify(p, h)
+    except ValueError:
+        # например: "password cannot be longer than 72 bytes"
+        return False
 
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()
