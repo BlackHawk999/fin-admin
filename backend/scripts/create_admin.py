@@ -2,8 +2,8 @@ from app.database import SessionLocal
 from app.models.user import User
 from app.auth import get_password_hash
 
-USERNAME = "admin"
-PASSWORD = "admin"
+USERNAME = "Abbos"
+PASSWORD = "abbosfin"
 
 db = SessionLocal()
 
