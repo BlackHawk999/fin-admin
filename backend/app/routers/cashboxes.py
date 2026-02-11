@@ -9,6 +9,7 @@ from ..database import get_db
 from ..models import User, Cashbox, DailyCashboxEntry
 from ..schemas.cashbox import (
     CashboxResponse,
+    CashboxCreate,
     DailyCashboxEntryCreate,
     DailyCashboxEntryResponse,
     CashboxEntryUpdate,
@@ -25,6 +26,35 @@ def list_cashboxes(
     _: Annotated[User, Depends(get_current_user)],
 ):
     return db.query(Cashbox).order_by(Cashbox.id).all()
+
+MAX_CASHBOXES = 5
+
+@router.post("", response_model=CashboxResponse, status_code=201)
+def create_cashbox(
+    payload: CashboxCreate,
+    db: Annotated[Session, Depends(get_db)],
+    _: Annotated[User, Depends(get_current_user)],
+):
+    name = payload.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Name is required")
+
+    # лимит 5 касс
+    total = db.query(func.count(Cashbox.id)).scalar() or 0
+    if total >= MAX_CASHBOXES:
+        raise HTTPException(status_code=400, detail=f"Max {MAX_CASHBOXES} cashboxes allowed")
+
+    # уникальность имени
+    exists = db.query(Cashbox).filter(func.lower(Cashbox.name) == name.lower()).first()
+    if exists:
+        raise HTTPException(status_code=400, detail="Cashbox with this name already exists")
+
+    cb = Cashbox(name=name)
+    db.add(cb)
+    db.commit()
+    db.refresh(cb)
+    return cb
+
 
 
 @router.get("/{cashbox_id}", response_model=CashboxResponse)

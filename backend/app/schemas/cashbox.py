@@ -1,6 +1,8 @@
 from datetime import date
 from pydantic import BaseModel, Field
 
+class CashboxCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
 
 class CashboxResponse(BaseModel):
     id: int

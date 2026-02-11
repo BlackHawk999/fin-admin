@@ -9,6 +9,10 @@ export function fetchCashboxes() {
   return api.get<Cashbox[]>('/cashboxes')
 }
 
+export function createCashbox(payload: { name: string }) {
+  return api.post('/cashboxes', payload)
+}
+
 export function fetchCashbox(id: number) {
   return api.get<Cashbox>(`/cashboxes/${id}`)
 }

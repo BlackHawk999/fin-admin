@@ -1,8 +1,13 @@
 <template>
   <div class="cashboxes-page" data-testid="cashboxes-page">
-    <div class="page-header">
-      <h1 class="page-header__title">Кассы</h1>
-    </div>
+   <div class="page-header">
+  <h1 class="page-header__title">Кассы</h1>
+
+  <button type="button" class="btn btn_primary" @click="openCreateCashboxModal">
+    Добавить кассу
+  </button>
+</div>
+
 
     <DateRangePicker
       v-model="dateRange"
@@ -158,11 +163,32 @@
       </BaseModal>
     </template>
   </div>
+  <BaseModal v-model="showCashboxModal" title="Новая касса">
+  <form class="form">
+    <BaseInput
+      v-model="cashboxName"
+      label="Название кассы"
+      placeholder="Например: Основная касса"
+      :error="cashboxNameError"
+    />
+  </form>
+
+  <template #footer>
+    <button type="button" class="btn btn_secondary" @click="showCashboxModal = false">
+      Отмена
+    </button>
+    <button type="button" class="btn btn_primary" :disabled="saving" @click="submitCashbox">
+      {{ saving ? 'Создание...' : 'Создать' }}
+    </button>
+  </template>
+</BaseModal>
+
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 
+import { createCashbox } from '@/api/cashboxes'
 import DateRangePicker from '@/components/DateRangePicker/DateRangePicker.vue'
 import BaseTable from '@/components/BaseTable/BaseTable.vue'
 import BaseModal from '@/components/BaseModal/BaseModal.vue'
@@ -183,6 +209,38 @@ const entryColumns: Column[] = [
   { key: 'amount_uzs', label: 'Сумма' },
   { key: 'comment', label: 'Комментарий' },
 ]
+
+const showCashboxModal = ref(false)
+const cashboxName = ref('')
+const cashboxNameError = ref<string | undefined>(undefined)
+
+function openCreateCashboxModal() {
+  cashboxName.value = ''
+  cashboxNameError.value = undefined
+  showCashboxModal.value = true
+}
+
+async function submitCashbox() {
+  const name = cashboxName.value.trim()
+  if (!name) {
+    cashboxNameError.value = 'Название обязательно'
+    return
+  }
+
+  saving.value = true
+  try {
+    await createCashbox({ name })
+    toast.success('Касса создана')
+
+    showCashboxModal.value = false
+    await loadCashboxes()
+    await loadEntries()
+  } catch (e: any) {
+    toast.error(e?.response?.data?.detail || 'Ошибка создания кассы')
+  } finally {
+    saving.value = false
+  }
+}
 
 const cashboxes = ref<Cashbox[]>([])
 const entriesByCashbox = ref<Record<number, { entries: DailyCashboxEntry[]; sum: number }>>({})
