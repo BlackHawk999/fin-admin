@@ -11,13 +11,17 @@
           >
             {{ col.label }}
           </th>
-          <th v-if="actions" class="base-table__cell base-table__cell_head base-table__cell_actions"></th>
+          <th
+            v-if="actions"
+            class="base-table__cell base-table__cell_head base-table__cell_actions"
+          />
         </tr>
       </thead>
+
       <tbody class="base-table__body">
         <tr
           v-for="(row, idx) in data"
-          :key="rowKey ? (row as Record<string, unknown>)[rowKey] : idx"
+          :key="rowKey ? row[rowKey] : idx"
           class="base-table__row"
         >
           <td
@@ -26,19 +30,37 @@
             class="base-table__cell"
             :class="col.tdClass"
           >
-            <slot name="cell" :column="col" :row="row" :value="(row as Record<string, unknown>)[col.key]">
-              {{ (row as Record<string, unknown>)[col.key] }}
+            <slot
+              name="cell"
+              :column="col"
+              :row="row"
+              :value="row[col.key]"
+            >
+              {{ row[col.key] }}
             </slot>
           </td>
-          <td v-if="actions" class="base-table__cell base-table__cell_actions">
-            <slot name="actions" :row="row"></slot>
+
+          <td
+            v-if="actions"
+            class="base-table__cell base-table__cell_actions"
+          >
+            <slot name="actions" :row="row" />
           </td>
         </tr>
       </tbody>
-      <tfoot v-if="summary !== undefined" class="base-table__foot">
+
+      <tfoot
+        v-if="summary !== undefined"
+        class="base-table__foot"
+      >
         <tr class="base-table__row base-table__row_foot">
-          <td :colspan="columns.length + (actions ? 1 : 0)" class="base-table__cell base-table__cell_foot">
-            <slot name="summary" :summary="summary">{{ summary }}</slot>
+          <td
+            :colspan="columns.length + (actions ? 1 : 0)"
+            class="base-table__cell base-table__cell_foot"
+          >
+            <slot name="summary" :summary="summary">
+              {{ summary }}
+            </slot>
           </td>
         </tr>
       </tfoot>
@@ -56,7 +78,7 @@ export interface Column {
 
 defineProps<{
   columns: Column[]
-  data: unknown[]
+  data: Array<Record<string, any>>
   rowKey?: string
   actions?: boolean
   summary?: string | number
@@ -74,6 +96,7 @@ defineProps<{
 
   &__table {
     min-width: 100%;
+    border-collapse: collapse;
   }
 
   &__head {
@@ -87,6 +110,7 @@ defineProps<{
       padding: 0.75rem 1rem;
       text-align: left;
     }
+
     &_foot .base-table__cell {
       font-weight: 600;
       border-top: 2px solid $border-color;
@@ -100,13 +124,16 @@ defineProps<{
     &_head {
       white-space: nowrap;
     }
+
     &_actions {
       width: 1%;
       white-space: nowrap;
     }
+
     &_right {
       text-align: right;
     }
+
     &_foot {
       padding: 0.75rem 1rem;
     }

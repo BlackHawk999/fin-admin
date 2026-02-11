@@ -4,12 +4,7 @@
       <h1 class="home-page__title" data-testid="home-title">Home</h1>
 
       <div class="home-page__actions" data-testid="home-actions">
-        <button
-          type="button"
-          class="btn btn_primary"
-          @click="openAddExpense"
-          data-testid="home-add-expense"
-        >
+        <button type="button" class="btn btn_primary" @click="openAddExpense" data-testid="home-add-expense">
           Xarajat qo'shish
         </button>
 
@@ -77,9 +72,17 @@
       <div v-else-if="lastExpenses.length" class="home-page__table-wrap" data-testid="home-last-expenses">
         <BaseTable :columns="expenseColumns" :data="lastExpenses" row-key="id">
           <template #cell="{ column, value, row }">
-            <template v-if="column.key === 'amount_uzs'">{{ formatUzs(value) }}</template>
-            <template v-else-if="column.key === 'payer'">{{ payerLabel(row) }}</template>
-            <template v-else>{{ value }}</template>
+            <template v-if="column.key === 'amount_uzs'">
+              {{ formatUzs(Number(value || 0)) }}
+            </template>
+
+            <template v-else-if="column.key === 'payer'">
+              {{ payerLabel(row as Expense) }}
+            </template>
+
+            <template v-else>
+              {{ value ?? '—' }}
+            </template>
           </template>
         </BaseTable>
       </div>
@@ -88,12 +91,7 @@
     </section>
 
     <!-- Add Expense modal -->
-    <BaseModal
-      v-model="showExpenseModal"
-      :title="'Yangi xarajat'"
-      @update:model-value="showExpenseModal = false"
-      data-testid="home-expense-modal"
-    >
+    <BaseModal v-model="showExpenseModal" :title="'Yangi xarajat'" data-testid="home-expense-modal">
       <form class="form" data-testid="home-expense-form">
         <BaseInput v-model="expenseForm.date" label="Sana" type="date" data-testid="home-expense-date" />
         <MoneyInput v-model="expenseForm.amount_uzs" label="Summa" data-testid="home-expense-amount" />
@@ -112,19 +110,16 @@
           data-testid="home-expense-owner"
         >
           <option :value="null">—</option>
-          <option v-for="o in owners" :key="o.id" :value="o.id">{{ o.name }}</option>
+          <option v-for="o in owners" :key="o.id" :value="o.id">
+            {{ o.name }}
+          </option>
         </select>
 
         <BaseInput v-model="expenseForm.comment" label="Izoh" data-testid="home-expense-comment" />
       </form>
 
       <template #footer>
-        <button
-          type="button"
-          class="btn btn_secondary"
-          @click="showExpenseModal = false"
-          data-testid="home-expense-cancel"
-        >
+        <button type="button" class="btn btn_secondary" @click="showExpenseModal = false" data-testid="home-expense-cancel">
           Bekor qilish
         </button>
         <button type="button" class="btn btn_primary" @click="submitExpense" data-testid="home-expense-submit">
@@ -288,8 +283,10 @@ async function submitExpense() {
       payer_type: expenseForm.value.payer_type,
       owner_id: expenseForm.value.owner_id,
     })
+
     toast.success('Xarajat qoshildi')
     showExpenseModal.value = false
+
     loadSummary()
     loadChart()
     loadLastExpenses()

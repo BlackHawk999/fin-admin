@@ -10,11 +10,7 @@
       data-testid="cashboxes-daterange"
     />
 
-    <div
-      v-if="loading"
-      class="cashboxes-page__loading"
-      data-testid="cashboxes-loading"
-    >
+    <div v-if="loading" class="cashboxes-page__loading" data-testid="cashboxes-loading">
       Загрузка...
     </div>
 
@@ -55,7 +51,7 @@
                 {{ formatUzs(Number(value || 0)) }}
               </template>
               <template v-else>
-                {{ value ?? "—" }}
+                {{ value ?? '—' }}
               </template>
             </template>
 
@@ -64,8 +60,8 @@
               <button
                 type="button"
                 class="btn btn_secondary btn_sm"
-                @click="openEditModal(row, cb.cashbox)"
-                :data-testid="`cashbox-edit-entry-${row.id}`"
+                @click="openEditModal(row as DailyCashboxEntry, cb.cashbox)"
+                :data-testid="`cashbox-edit-entry-${(row as DailyCashboxEntry).id}`"
               >
                 Изменить
               </button>
@@ -78,35 +74,26 @@
       <BaseModal
         v-model="showEntryModal"
         :title="isEditMode ? 'Редактировать запись' : 'Новая запись в кассу'"
-        @update:model-value="onCloseModal"
         data-testid="cashbox-entry-modal"
       >
-        <form
-          v-if="selectedCashbox"
-          class="form"
-          data-testid="cashbox-entry-form"
-        >
+        <form v-if="selectedCashbox" class="form" data-testid="cashbox-entry-form">
           <p class="form__info" data-testid="cashbox-selected-name">
             Касса: {{ selectedCashbox.name }}
           </p>
 
           <!-- ✅ Старые значения — СНИМОК, не меняется при вводе -->
-          <div
-            v-if="isEditMode"
-            class="form__old"
-            data-testid="cashbox-old-values"
-          >
+          <div v-if="isEditMode" class="form__old" data-testid="cashbox-old-values">
             <p class="form__old-title">Старые значения</p>
             <div class="form__old-grid">
               <div data-testid="cashbox-old-date">
-                <b>Дата:</b> {{ originalSnapshot.date || "—" }}
+                <b>Дата:</b> {{ originalSnapshot.date || '—' }}
               </div>
               <div data-testid="cashbox-old-amount">
                 <b>Сумма:</b>
                 {{ formatUzs(Number(originalSnapshot.amount_uzs || 0)) }}
               </div>
               <div data-testid="cashbox-old-comment">
-                <b>Комментарий:</b> {{ originalSnapshot.comment || "—" }}
+                <b>Комментарий:</b> {{ originalSnapshot.comment || '—' }}
               </div>
             </div>
           </div>
@@ -160,11 +147,11 @@
             {{
               saving
                 ? isEditMode
-                  ? "Сохранение..."
-                  : "Добавление..."
+                  ? 'Сохранение...'
+                  : 'Добавление...'
                 : isEditMode
-                  ? "Сохранить"
-                  : "Добавить"
+                  ? 'Сохранить'
+                  : 'Добавить'
             }}
           </button>
         </template>
@@ -174,70 +161,58 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, watch, onMounted } from 'vue'
 
-import DateRangePicker from "@/components/DateRangePicker/DateRangePicker.vue";
-import BaseTable from "@/components/BaseTable/BaseTable.vue";
-import BaseModal from "@/components/BaseModal/BaseModal.vue";
-import BaseInput from "@/components/BaseInput/BaseInput.vue";
-import MoneyInput from "@/components/MoneyInput/MoneyInput.vue";
-import type { Column } from "@/components/BaseTable/BaseTable.vue";
+import DateRangePicker from '@/components/DateRangePicker/DateRangePicker.vue'
+import BaseTable from '@/components/BaseTable/BaseTable.vue'
+import BaseModal from '@/components/BaseModal/BaseModal.vue'
+import BaseInput from '@/components/BaseInput/BaseInput.vue'
+import MoneyInput from '@/components/MoneyInput/MoneyInput.vue'
+import type { Column } from '@/components/BaseTable/BaseTable.vue'
 
-import {
-  fetchCashboxes,
-  fetchEntries,
-  fetchEntriesSum,
-  createEntry,
-  updateEntry,
-} from "@/api/cashboxes";
-import { formatUzs } from "@/utils/format";
-import { firstDayOfMonth, lastDayOfMonth } from "@/utils/date";
-import { useToastStore } from "@/stores/toastStore";
-import type { Cashbox, DailyCashboxEntry } from "@/types";
+import { fetchCashboxes, fetchEntries, fetchEntriesSum, createEntry, updateEntry } from '@/api/cashboxes'
+import { formatUzs } from '@/utils/format'
+import { firstDayOfMonth, lastDayOfMonth } from '@/utils/date'
+import { useToastStore } from '@/stores/toastStore'
+import type { Cashbox, DailyCashboxEntry } from '@/types'
 
-const toast = useToastStore();
+const toast = useToastStore()
 
 const entryColumns: Column[] = [
-  { key: "date", label: "Дата" },
-  { key: "amount_uzs", label: "Сумма" },
-  { key: "comment", label: "Комментарий" },
-];
+  { key: 'date', label: 'Дата' },
+  { key: 'amount_uzs', label: 'Сумма' },
+  { key: 'comment', label: 'Комментарий' },
+]
 
-const cashboxes = ref<Cashbox[]>([]);
-const entriesByCashbox = ref<
-  Record<number, { entries: DailyCashboxEntry[]; sum: number }>
->({});
-const loading = ref(true);
-const saving = ref(false);
+const cashboxes = ref<Cashbox[]>([])
+const entriesByCashbox = ref<Record<number, { entries: DailyCashboxEntry[]; sum: number }>>({})
+const loading = ref(true)
+const saving = ref(false)
 
 const dateRange = ref<{ date_from: string; date_to: string }>({
   date_from: firstDayOfMonth(),
   date_to: lastDayOfMonth(),
-});
+})
 
-const showEntryModal = ref(false);
-const selectedCashbox = ref<Cashbox | null>(null);
+const showEntryModal = ref(false)
+const selectedCashbox = ref<Cashbox | null>(null)
 
 /**
  * ✅ Режимы:
  * - create: editingEntryId = null
  * - edit:   editingEntryId = number
  */
-const editingEntryId = ref<number | null>(null);
-const isEditMode = computed(() => editingEntryId.value !== null);
+const editingEntryId = ref<number | null>(null)
+const isEditMode = computed(() => editingEntryId.value !== null)
 
 /**
  * ✅ Снимок "старых" значений — НЕ меняется при вводе
  */
-const originalSnapshot = ref<{
-  date: string;
-  amount_uzs: number;
-  comment: string;
-}>({
-  date: "",
+const originalSnapshot = ref<{ date: string; amount_uzs: number; comment: string }>({
+  date: '',
   amount_uzs: 0,
-  comment: "",
-});
+  comment: '',
+})
 
 /**
  * ✅ Форма редактирования/создания — меняется пользователем
@@ -245,14 +220,14 @@ const originalSnapshot = ref<{
 const form = ref<{ date: string; amount_uzs: number; comment: string }>({
   date: new Date().toISOString().slice(0, 10),
   amount_uzs: 0,
-  comment: "",
-});
+  comment: '',
+})
 
 /**
  * ✅ Причина редактирования
  */
-const editReason = ref("");
-const editReasonError = ref<string | undefined>(undefined);
+const editReason = ref('')
+const editReasonError = ref<string | undefined>(undefined)
 
 const cashboxesWithEntries = computed(() =>
   cashboxes.value.map((cashbox) => ({
@@ -260,18 +235,17 @@ const cashboxesWithEntries = computed(() =>
     entries: entriesByCashbox.value[cashbox.id]?.entries ?? [],
     sum: entriesByCashbox.value[cashbox.id]?.sum ?? 0,
   })),
-);
+)
 
 async function loadCashboxes() {
-  const { data } = await fetchCashboxes();
-  cashboxes.value = data;
+  const { data } = await fetchCashboxes()
+  cashboxes.value = data
 }
 
 async function loadEntries() {
-  if (!cashboxes.value.length) return;
+  if (!cashboxes.value.length) return
 
-  const result: Record<number, { entries: DailyCashboxEntry[]; sum: number }> =
-    {};
+  const result: Record<number, { entries: DailyCashboxEntry[]; sum: number }> = {}
 
   try {
     await Promise.all(
@@ -281,88 +255,75 @@ async function loadEntries() {
             date_from: dateRange.value.date_from,
             date_to: dateRange.value.date_to,
           }),
-          fetchEntriesSum(
-            cb.id,
-            dateRange.value.date_from,
-            dateRange.value.date_to,
-          ),
-        ]);
+          fetchEntriesSum(cb.id, dateRange.value.date_from, dateRange.value.date_to),
+        ])
 
         result[cb.id] = {
           entries: entRes.data ?? [],
           sum: Number((sumRes.data as any)?.sum_uzs ?? 0),
-        };
+        }
       }),
-    );
+    )
 
-    entriesByCashbox.value = result;
+    entriesByCashbox.value = result
   } catch (e: any) {
-    toast.error(e?.response?.data?.detail || "Ошибка загрузки касс");
-    entriesByCashbox.value = {};
+    toast.error(e?.response?.data?.detail || 'Ошибка загрузки касс')
+    entriesByCashbox.value = {}
   }
 }
 
 function resetModalState() {
-  editingEntryId.value = null;
-  selectedCashbox.value = null;
+  editingEntryId.value = null
+  selectedCashbox.value = null
 
-  originalSnapshot.value = { date: "", amount_uzs: 0, comment: "" };
+  originalSnapshot.value = { date: '', amount_uzs: 0, comment: '' }
   form.value = {
     date: new Date().toISOString().slice(0, 10),
     amount_uzs: 0,
-    comment: "",
-  };
+    comment: '',
+  }
 
-  editReason.value = "";
-  editReasonError.value = undefined;
+  editReason.value = ''
+  editReasonError.value = undefined
 }
 
 function openCreateModal(cb: Cashbox) {
-  resetModalState();
-  selectedCashbox.value = cb;
-  showEntryModal.value = true;
+  resetModalState()
+  selectedCashbox.value = cb
+  showEntryModal.value = true
 }
 
 function openEditModal(row: DailyCashboxEntry, cb: Cashbox) {
-  resetModalState();
+  resetModalState()
 
-  selectedCashbox.value = cb;
-  editingEntryId.value = row.id;
+  selectedCashbox.value = cb
+  editingEntryId.value = row.id
 
-  // ✅ Снимок "старого" значения — копия, НЕ зависит от form
   originalSnapshot.value = {
     date: row.date,
     amount_uzs: Number((row as any).amount_uzs || 0),
-    comment: row.comment || "",
-  };
+    comment: row.comment || '',
+  }
 
-  // ✅ Форму заполняем текущими значениями (которые будем менять)
   form.value = {
     date: row.date,
     amount_uzs: Number((row as any).amount_uzs || 0),
-    comment: row.comment || "",
-  };
+    comment: row.comment || '',
+  }
 
-  showEntryModal.value = true;
-}
-
-function onCloseModal() {
-  showEntryModal.value = false;
-  editReasonError.value = undefined;
+  showEntryModal.value = true
 }
 
 async function submit() {
-  if (!selectedCashbox.value) return;
+  if (!selectedCashbox.value) return
 
-  if (isEditMode.value) {
-    if (!editReason.value.trim()) {
-      editReasonError.value = "Причина обязательна";
-      toast.error("Укажи причину редактирования");
-      return;
-    }
+  if (isEditMode.value && !editReason.value.trim()) {
+    editReasonError.value = 'Причина обязательна'
+    toast.error('Укажи причину редактирования')
+    return
   }
 
-  saving.value = true;
+  saving.value = true
   try {
     if (isEditMode.value && editingEntryId.value !== null) {
       await updateEntry(editingEntryId.value, {
@@ -370,43 +331,43 @@ async function submit() {
         amount_uzs: Number(form.value.amount_uzs || 0),
         comment: form.value.comment || undefined,
         edit_reason: editReason.value.trim(),
-      });
-      toast.success("Запись обновлена");
+      })
+      toast.success('Запись обновлена')
     } else {
       await createEntry({
         cashbox_id: selectedCashbox.value.id,
         date: form.value.date,
         amount_uzs: Number(form.value.amount_uzs || 0),
         comment: form.value.comment || undefined,
-      });
-      toast.success("Запись добавлена");
+      })
+      toast.success('Запись добавлена')
     }
 
-    showEntryModal.value = false;
-    await loadEntries();
-    resetModalState();
+    showEntryModal.value = false
+    await loadEntries()
+    resetModalState()
   } catch (e: any) {
-    toast.error(e?.response?.data?.detail || "Ошибка сохранения");
+    toast.error(e?.response?.data?.detail || 'Ошибка сохранения')
   } finally {
-    saving.value = false;
+    saving.value = false
   }
 }
 
-watch(dateRange, loadEntries, { deep: true });
+watch(dateRange, loadEntries, { deep: true })
 
 onMounted(async () => {
-  loading.value = true;
+  loading.value = true
   try {
-    await loadCashboxes();
-    await loadEntries();
+    await loadCashboxes()
+    await loadEntries()
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-});
+})
 </script>
 
 <style lang="scss" scoped>
-@use "@/styles/variables" as *;
+@use '@/styles/variables' as *;
 
 .cashboxes-page {
   &__daterange {

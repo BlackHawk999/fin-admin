@@ -78,19 +78,26 @@
         <div data-testid="expenses-table">
           <BaseTable :columns="columns" :data="expenses" row-key="id" :summary="totalFormatted" actions>
             <template #cell="{ column, row, value }">
+              <!-- ✅ row может приходить как unknown -->
               <template v-if="column.key === 'amount_uzs'">
                 {{ formatUzs(Number(value || 0)) }}
               </template>
 
               <template v-else-if="column.key === 'payer_type'">
-                {{ row.payer_type === 'owner' ? 'Owner' : 'Other' }}
+                <template v-if="(row as Expense).payer_type === 'owner'">Owner</template>
+                <template v-else>Other</template>
               </template>
 
               <template v-else-if="column.key === 'owner_id'">
-                <span v-if="row.owner_id && ownerById(row.owner_id)" class="expenses-page__owner">
-                  <span class="expenses-page__owner-dot" :style="{ background: ownerById(row.owner_id)!.color_hex }" />
-                  {{ ownerById(row.owner_id)!.name }}
-                </span>
+                <template v-if="(row as Expense).owner_id && ownerById((row as Expense).owner_id!)">
+                  <span class="expenses-page__owner">
+                    <span
+                      class="expenses-page__owner-dot"
+                      :style="{ background: ownerById((row as Expense).owner_id!)!.color_hex }"
+                    />
+                    {{ ownerById((row as Expense).owner_id!)!.name }}
+                  </span>
+                </template>
                 <span v-else>—</span>
               </template>
 
@@ -103,16 +110,16 @@
               <button
                 type="button"
                 class="btn btn_secondary btn_sm"
-                @click="editExpense(row)"
-                :data-testid="`expense-edit-${row.id}`"
+                @click="editExpense(row as Expense)"
+                :data-testid="`expense-edit-${(row as Expense).id}`"
               >
                 O'zgartirish
               </button>
               <button
                 type="button"
                 class="btn btn_danger btn_sm"
-                @click="confirmDelete(row)"
-                :data-testid="`expense-delete-${row.id}`"
+                @click="confirmDelete(row as Expense)"
+                :data-testid="`expense-delete-${(row as Expense).id}`"
               >
                 O'chirish
               </button>
@@ -142,9 +149,16 @@
           <option value="owner">Boshliqlar</option>
         </select>
 
-        <select v-if="form.payer_type === 'owner'" v-model="form.owner_id" class="form__select" data-testid="expense-owner">
+        <select
+          v-if="form.payer_type === 'owner'"
+          v-model="form.owner_id"
+          class="form__select"
+          data-testid="expense-owner"
+        >
           <option :value="null">—</option>
-          <option v-for="o in owners" :key="o.id" :value="o.id">{{ o.name }}</option>
+          <option v-for="o in owners" :key="o.id" :value="o.id">
+            {{ o.name }}
+          </option>
         </select>
 
         <BaseInput v-model="form.comment" label="Izoh" data-testid="expense-comment" />
@@ -316,12 +330,10 @@ async function load() {
 
     let list = data
 
-    // payer type фильтр (если не через API)
     if (filterPayerType.value) {
       list = list.filter((e) => e.payer_type === filterPayerType.value)
     }
 
-    // comment фильтр
     const q = filterComment.value.trim().toLowerCase()
     if (q) {
       list = list.filter((e) => (e.comment || '').toLowerCase().includes(q))
@@ -396,13 +408,10 @@ async function exportExcel() {
   }
 }
 
-// если payer type меняется — сбросить ownerId
 watch(filterPayerType, (v) => {
   if (v !== 'owner') filterOwnerId.value = null
 })
 
-// debounce не делаю — но чтобы не “ддосить”,
-// comment фильтр дергает load только по паузе (простая версия)
 let t: number | undefined
 watch([dateRange, filterCategory, filterPayerType, filterOwnerId], () => load(), { deep: true })
 

@@ -27,7 +27,7 @@ import { useAttrs } from 'vue'
 defineOptions({ inheritAttrs: false })
 const attrs = useAttrs()
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
     modelValue: string | number
     label?: string
