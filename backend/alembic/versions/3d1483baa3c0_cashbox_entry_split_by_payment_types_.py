@@ -41,6 +41,12 @@ def upgrade() -> None:
         "daily_cashbox_entries",
         sa.Column("cash_exp_other_uzs", sa.Numeric(15, 0), nullable=False, server_default="0"),
     )
+    op.alter_column(
+        "daily_cashbox_entries",
+        "amount_uzs",
+        existing_type=sa.Numeric(15, 0),
+        nullable=True,
+    )
 
     # если раньше amount_uzs был общей суммой (обычно наличные) — переносим в cash_in_uzs
     op.execute("UPDATE daily_cashbox_entries SET cash_in_uzs = COALESCE(amount_uzs, 0)")
