@@ -9,7 +9,11 @@ class Cashbox(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False, unique=True)
 
-    entries = relationship("DailyCashboxEntry", back_populates="cashbox", cascade="all, delete-orphan")
+    entries = relationship(
+        "DailyCashboxEntry",
+        back_populates="cashbox",
+        cascade="all, delete-orphan",
+    )
 
 
 class DailyCashboxEntry(Base):
@@ -18,7 +22,19 @@ class DailyCashboxEntry(Base):
     id = Column(Integer, primary_key=True, index=True)
     cashbox_id = Column(Integer, ForeignKey("cashboxes.id", ondelete="CASCADE"), nullable=False)
     date = Column(Date, nullable=False)
-    amount_uzs = Column(Numeric(15, 0), nullable=False)
+
+    # incomes
+    cash_in_uzs = Column(Numeric(15, 0), nullable=False, default=0)
+    card_in_uzs = Column(Numeric(15, 0), nullable=False, default=0)
+    click_payme_in_uzs = Column(Numeric(15, 0), nullable=False, default=0)
+
+    # bonuses
+    bonus_spent_uzs = Column(Numeric(15, 0), nullable=False, default=0)
+
+    # expenses (cash only)
+    cash_exp_company_uzs = Column(Numeric(15, 0), nullable=False, default=0)
+    cash_exp_other_uzs = Column(Numeric(15, 0), nullable=False, default=0)
+
     comment = Column(String(500), nullable=True)
 
     cashbox = relationship("Cashbox", back_populates="entries")

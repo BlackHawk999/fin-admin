@@ -35,12 +35,27 @@ export interface Cashbox {
   name: string
 }
 
-export interface DailyCashboxEntry {
+export type DailyCashboxEntry = {
   id: number
   cashbox_id: number
   date: string
-  amount_uzs: number
-  comment: string | null
+
+  cash_in_uzs: number
+  card_in_uzs: number
+  click_payme_in_uzs: number
+
+  bonus_spent_uzs: number
+
+  cash_exp_company_uzs: number
+  cash_exp_other_uzs: number
+
+  comment?: string | null
+
+  // computed from backend (мы их возвращаем из API)
+  total_income_uzs: number
+  net_sales_uzs: number
+  cash_exp_total_uzs: number
+  cash_end_uzs: number
 }
 
 export interface Owner {

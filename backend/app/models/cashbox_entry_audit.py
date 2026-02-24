@@ -1,5 +1,4 @@
-# backend/app/models/cashbox_entry_audit.py
-from datetime import datetime, date as date_type
+from datetime import datetime
 
 from sqlalchemy import Column, Integer, String, DateTime, Date, ForeignKey, Numeric
 from sqlalchemy.orm import relationship
@@ -20,14 +19,31 @@ class CashboxEntryAudit(Base):
 
     # old values
     old_date = Column(Date, nullable=False)
-    old_amount_uzs = Column(Numeric(15, 0), nullable=False)
+
+    old_cash_in_uzs = Column(Numeric(15, 0), nullable=False, default=0)
+    old_card_in_uzs = Column(Numeric(15, 0), nullable=False, default=0)
+    old_click_payme_in_uzs = Column(Numeric(15, 0), nullable=False, default=0)
+
+    old_bonus_spent_uzs = Column(Numeric(15, 0), nullable=False, default=0)
+
+    old_cash_exp_company_uzs = Column(Numeric(15, 0), nullable=False, default=0)
+    old_cash_exp_other_uzs = Column(Numeric(15, 0), nullable=False, default=0)
+
     old_comment = Column(String(500), nullable=True)
 
     # new values
     new_date = Column(Date, nullable=False)
-    new_amount_uzs = Column(Numeric(15, 0), nullable=False)
+
+    new_cash_in_uzs = Column(Numeric(15, 0), nullable=False, default=0)
+    new_card_in_uzs = Column(Numeric(15, 0), nullable=False, default=0)
+    new_click_payme_in_uzs = Column(Numeric(15, 0), nullable=False, default=0)
+
+    new_bonus_spent_uzs = Column(Numeric(15, 0), nullable=False, default=0)
+
+    new_cash_exp_company_uzs = Column(Numeric(15, 0), nullable=False, default=0)
+    new_cash_exp_other_uzs = Column(Numeric(15, 0), nullable=False, default=0)
+
     new_comment = Column(String(500), nullable=True)
 
-    # relationships (optional, but nice)
     entry = relationship("DailyCashboxEntry", lazy="joined")
     edited_by = relationship("User", lazy="joined")
